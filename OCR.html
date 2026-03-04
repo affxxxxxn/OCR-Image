@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Max OCR Scanner</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    video { width: 320px; }
+    #output {
+      white-space: pre-wrap;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 95%;
+      min-height: 100px;
+    }
+    button { margin-top: 10px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+
+<h2>Max Quality OCR Scanner</h2>
+
+<video id="video" autoplay></video>
+<br>
+<button id="captureBtn">Capture</button>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
+<h3>Extracted Text:</h3>
+<div id="output">Your text will appear here</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("captureBtn");
+const output = document.getElementById("output");
+
+// 🔥 HIGH RES BACK CAMERA
+async function startCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      facingMode: "environment"
+    }
+  });
+  video.srcObject = stream;
+}
+startCamera();
+
+// 🔥 TEXT CLEANER
+function cleanText(text) {
+  return text
+    .replace(/[^\x20-\x7E\n]/g, "")
+    .replace(/\n\s*\n/g, "\n")
+    .trim();
+}
+
+captureBtn.addEventListener("click", () => {
+
+  const scale = 2;
+  canvas.width = video.videoWidth * scale;
+  canvas.height = video.videoHeight * scale;
+  const ctx = canvas.getContext("2d");
+
+  // 🔥 Contrast + Brightness Boost
+  ctx.filter = "contrast(250%) brightness(120%)";
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.filter = "none";
+
+  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let data = imageData.data;
+
+  // 🔥 Grayscale + Adaptive Threshold
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+
+    // Slight adaptive threshold
+    const threshold = avg > 150 ? 255 : 0;
+
+    data[i] = data[i+1] = data[i+2] = threshold;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  output.textContent = "Processing...";
+
+  canvas.toBlob(blob => {
+    Tesseract.recognize(blob, "eng", {
+      logger: m => console.log(m),
+      tessedit_pageseg_mode: 6,
+      tessedit_char_whitelist:
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:-$()/% "
+    }).then(({ data: { text } }) => {
+      output.textContent = cleanText(text) || "No text detected";
+    });
+  });
+
+});
+</script>
+
+</body>
+</html>
