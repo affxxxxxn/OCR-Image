@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<<<<<<< HEAD
   <title>Max OCR Scanner</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -99,6 +100,38 @@ captureBtn.addEventListener("click", () => {
   });
 
 });
+=======
+  <title>OCR Scanner</title>
+</head>
+
+<body>
+
+<h2>Upload or Take Picture</h2>
+
+<button onclick="document.getElementById('imageInput').click()">
+  Upload or Take Photo
+</button>
+
+<input 
+  type="file" 
+  id="imageInput" 
+  accept="image/*"
+  style="display:none"
+>
+
+<script>
+
+document.getElementById("imageInput").addEventListener("change", function(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    console.log("Selected file:", file.name);
+
+});
+
+>>>>>>> e0d5947 (updated code)
 </script>
 
 </body>
