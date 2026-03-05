@@ -1,138 +1,139 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<<<<<<< HEAD
-  <title>Max OCR Scanner</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    video { width: 320px; }
-    #output {
-      white-space: pre-wrap;
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      width: 95%;
-      min-height: 100px;
-    }
-    button { margin-top: 10px; padding: 10px 15px; }
-  </style>
-</head>
-<body>
-
-<h2>Max Quality OCR Scanner</h2>
-
-<video id="video" autoplay></video>
-<br>
-<button id="captureBtn">Capture</button>
-
-<canvas id="canvas" style="display:none;"></canvas>
-
-<h3>Extracted Text:</h3>
-<div id="output">Your text will appear here</div>
+<title>OCR Scanner</title>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
-<script>
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const captureBtn = document.getElementById("captureBtn");
-const output = document.getElementById("output");
+<style>
 
-// 🔥 HIGH RES BACK CAMERA
-async function startCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      width: { ideal: 1920 },
-      height: { ideal: 1080 },
-      facingMode: "environment"
-    }
-  });
-  video.srcObject = stream;
-}
-startCamera();
-
-// 🔥 TEXT CLEANER
-function cleanText(text) {
-  return text
-    .replace(/[^\x20-\x7E\n]/g, "")
-    .replace(/\n\s*\n/g, "\n")
-    .trim();
+body{
+font-family:Arial;
+text-align:center;
+margin-top:40px;
 }
 
-captureBtn.addEventListener("click", () => {
+#preview{
+max-width:350px;
+margin-top:20px;
+}
 
-  const scale = 2;
-  canvas.width = video.videoWidth * scale;
-  canvas.height = video.videoHeight * scale;
-  const ctx = canvas.getContext("2d");
+textarea{
+width:80%;
+height:150px;
+margin-top:20px;
+}
 
-  // 🔥 Contrast + Brightness Boost
-  ctx.filter = "contrast(250%) brightness(120%)";
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  ctx.filter = "none";
+</style>
 
-  let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let data = imageData.data;
-
-  // 🔥 Grayscale + Adaptive Threshold
-  for (let i = 0; i < data.length; i += 4) {
-    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-
-    // Slight adaptive threshold
-    const threshold = avg > 150 ? 255 : 0;
-
-    data[i] = data[i+1] = data[i+2] = threshold;
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-
-  output.textContent = "Processing...";
-
-  canvas.toBlob(blob => {
-    Tesseract.recognize(blob, "eng", {
-      logger: m => console.log(m),
-      tessedit_pageseg_mode: 6,
-      tessedit_char_whitelist:
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:-$()/% "
-    }).then(({ data: { text } }) => {
-      output.textContent = cleanText(text) || "No text detected";
-    });
-  });
-
-});
-=======
-  <title>OCR Scanner</title>
 </head>
+
 
 <body>
 
-<h2>Upload or Take Picture</h2>
+<h2>Upload or Take Photo</h2>
 
-<button onclick="document.getElementById('imageInput').click()">
-  Upload or Take Photo
-</button>
+<input type="file" id="imageInput" accept="image/*" capture>
 
-<input 
-  type="file" 
-  id="imageInput" 
-  accept="image/*"
-  style="display:none"
->
+<br>
+
+<img id="preview">
+
+<br>
+
+<textarea id="outputText" placeholder="Detected text will appear here"></textarea>
+
 
 <script>
 
-document.getElementById("imageInput").addEventListener("change", function(event) {
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const output = document.getElementById("outputText");
 
-    const file = event.target.files[0];
 
-    if (!file) return;
+input.addEventListener("change", function(event){
 
-    console.log("Selected file:", file.name);
+const file = event.target.files[0];
+
+if(!file) return;
+
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+preview.src = e.target.result;
+
+processImage(e.target.result);
+
+};
+
+reader.readAsDataURL(file);
 
 });
 
->>>>>>> e0d5947 (updated code)
+
+function processImage(imageSrc){
+
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+const img = new Image();
+
+img.onload = function(){
+
+canvas.width = img.width * 2;
+canvas.height = img.height * 2;
+
+ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+const data = imageData.data;
+
+for(let i=0;i<data.length;i+=4){
+
+const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+
+data[i] = avg * 1.4;
+data[i+1] = avg * 1.4;
+data[i+2] = avg * 1.4;
+
+}
+
+ctx.putImageData(imageData,0,0);
+
+runOCR(canvas);
+
+};
+
+img.src = imageSrc;
+
+}
+
+
+function runOCR(image){
+
+output.value = "Scanning...";
+
+Tesseract.recognize(
+image,
+"eng",
+{
+tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?()-:/ "
+}
+
+).then(({ data:{ text } }) => {
+
+console.log(text);
+
+output.value = text;
+
+});
+
+}
+
 </script>
 
+
 </body>
+
 </html>
